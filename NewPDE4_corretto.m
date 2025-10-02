@@ -1,0 +1,445 @@
+% Nonsym pb stemming from 3d PDE
+% clear all
+% close all
+% clc
+
+format shorte
+format compact
+
+N = []; M = [];
+
+ntot=30;
+ntot=50;
+n1 = ntot; N = [N, n1]; m1 = ntot; M = [M, m1];
+n2 = ntot; N = [N, n2]; m2 = ntot; M = [M, m2];
+n3 = ntot; N = [N, n3]; m3 = ntot; M = [M, m3];
+
+d = 3;
+
+
+
+
+h1 = 1/n1;
+h2 = 1/n2;
+h3 = 1/n3;
+
+x_nodes = linspace(0,1,n1+1)';
+y_nodes = linspace(0,1,n2+1)';
+z_nodes = linspace(0,1,n3+1)';
+%addpath('./Data')
+%load mnist_all
+addpath('./oseledets_TT-Toolbox')
+addpath('./tensor_toolbox-v3.6')
+%addpath('/home/valeria.simoncini/matlab/tensor_toolbox-v3.6')
+
+% e = ones(n1+1,1);
+% T1 = spdiags([e -2*e e],-1:1,m1+1,m1+1); 
+% e = ones(n2+1,1);
+% T2 = spdiags([e -2*e e],-1:1,m2+1,m2+1); 
+% e = ones(n3+1,1);
+% T3 = spdiags([e -2*e e],-1:1,m3+1,m3+1); 
+
+a = ones(n1+1,1); a = a/norm(a);
+b = ones(n2+1,1); b = b/norm(b);
+c = ones(n3+1,1); c = c/norm(c);
+
+e = ones(m1+1,1);
+A1 = -m1^2*spdiags([e -2*e e],-1:1,m1+1,m1+1); 
+e = ones(m2+1,1);
+A2 = -m2^2*spdiags([e -2*e e],-1:1,m2+1,m2+1); 
+e = ones(m3+1,1);
+A3 = -m3^2*spdiags([e -2*e e],-1:1,m3+1,m3+1); 
+x=linspace(0,1,m3+1);
+A4 = m3/2*spdiags(diag(2*exp( 1-x))*[-e 0*e e],-1:1,m3+1,m3+1); 
+
+
+  Phi1 = sparse(diag(2*ones(n1+1,1)) + diag(2+sin(2*pi*x_nodes))); 
+% Ni1 = sparse(diag(2*ones(n1+1,1)) + diag(sin(2*pi*z_nodes)));
+% Psi1 = sparse(diag(2*ones(n1+1,1)) +diag(sin(2*pi*y_nodes)));
+% 
+% Phi2 =diag(2*ones(n1+1,1)) + diag(sin(2*pi*x_nodes));
+  Ni2 = diag(2*ones(n1+1,1)) +diag(sin(2*pi*z_nodes));
+% Psi2 =diag(2*ones(n1+1,1)) + diag(sin(2*pi*y_nodes));
+% 
+% Phi3 =diag(2*ones(n1+1,1)) + diag(sin(2*pi*x_nodes));
+% Ni3 =diag(2*ones(n1+1,1)) + diag(sin(2*pi*z_nodes));
+  Psi3 =diag(2*ones(n1+1,1)) + diag(sin(2*pi*y_nodes));
+
+%%{
+%Phi1 = sparse(diag(ones(n1+1,1))); 
+Psi1 = sparse(diag(ones(n1+1,1)));
+Ni1 = sparse(diag(ones(n1+1,1)));
+
+Phi2 =sparse(diag(ones(n1+1,1)));
+%Ni2 = sparse(diag(ones(n1+1,1)));
+Psi2 =sparse(diag(ones(n1+1,1)));
+
+Phi3 =sparse(diag(ones(n1+1,1)));
+Ni3 =sparse(diag(ones(n1+1,1)));
+%Psi3 =sparse(diag(ones(n1+1,1)));
+
+Psi4 =sparse(diag(ones(n1+1,1)));
+%}
+
+n1=n1+1;
+
+
+
+
+values1{1} = Phi1 * A1; values1{2} = Ni1; values1{3} = Psi1;
+values2{1} = Phi2; values2{2} = Ni2 * A2; values2{3} = Psi2;
+%values3{1} = Phi3; values3{2} = Ni3; values3{3} = Psi3 * A3;
+values3{1} = Phi3; values3{2} = Ni3; values3{3} = Psi3 * A3+(Psi4*A4)';
+%values4{1} = Phi3; values4{2} = Ni3; values4{3} = Psi4 * A4;
+m=n1;
+
+
+%values{1} = values1;
+%values{2} = values2;
+%values{3} = values3;
+%values{4} = values4;
+for i = 1:3
+    %[~, R1{i}] = qr(values1{i},0); [~, R2{i}] = qr(values2{i},0); [~, R3{i}] = qr(values3{i},0);
+    [L1{i}, R1{i}] = lu(values1{i}); [L2{i}, R2{i}] = lu(values2{i}); [L3{i}, R3{i}] = lu(values3{i});
+   %[~, R4{i}] = qr(values4{i},0);
+    %size(R1{i}),size(R2{i}),size(R3{i})
+
+    % [cond(R1{i}), cond(R2{i}), cond(R3{i})],
+    % pause,
+
+    [~, ind] = min([cond(R1{i}), cond(R2{i}), cond(R3{i})]); %,cond(R4{i})]);
+    %[~, ind] = min([cond(R1{i})*cond(L1{i}), cond(R2{i})*cond(L2{i}), cond(R3{i})*cond(L3{i})]); %,cond(R4{i})]);
+    rr = eval(['R',num2str(ind)]);
+    %[~, ind2] = min([cond(L1{i}), cond(L2{i}), cond(L3{i})]); %,cond(R4{i})]);
+    ll = eval(['L', num2str(ind)]);
+    %rr=eval(['values',num2str(i)]);
+%   rr{i} = eye(size(R1{i}));
+    new_values1{i} = ll{i}\values1{i}/rr{i};
+    new_values2{i} = ll{i}\values2{i}/rr{i};
+    new_values3{i} = ll{i}\values3{i}/rr{i};
+%    new_values4{i} = ll{i}\values4{i}/rr{i};
+    % new_values1{i} = values1{i}/rr{i};
+    % new_values2{i} = values2{i}/rr{i};
+    % new_values3{i} = values3{i}/rr{i};
+end
+%new_values{1} = values1;
+%new_values{2} = values2;
+%new_values{3} = values3;
+%new_values{4} = values4;
+new_values{1} = new_values1;
+new_values{2} = new_values2;
+new_values{3} = new_values3;
+%new_values{4} = new_values4;
+coeff{1}{1} = kron(new_values1{2}, new_values1{1});
+coeff{1}{2} = new_values1{3};
+coeff{2}{1} = kron(new_values2{2}, new_values2{1});
+coeff{2}{2} = new_values2{3};
+coeff{3}{1} = kron(new_values3{2}, new_values3{1});
+coeff{3}{2} = new_values3{3};
+%coeff{3}{2} = new_values3{3}+ new_values4{3};
+%coeff{4}{1} = kron(new_values4{2}, new_values4{1});
+%coeff{4}{2} = new_values4{3};
+C1 = kron(b,a); C2 = c;
+clear new_values1 new_values2 new_values3 new_values4 R1 R2 R3 R4
+clear values1 values2 values3 values4
+p =1;
+%addpath('tensor_toolbox-v3.6')
+% Tucker RHS
+[Qa,Ra] = qr(a,0);
+[Qb,Rb] = qr(b,0);
+[Qc,Rc] = qr(c,0);
+
+K(:,:,1) = 1;
+K = tensor(K);
+K(:,:,1) = 1;
+
+Rhs.a = Qa;
+Rhs.b = Qb;
+Rhs.c = Qc;
+Rhs.F = ttm(K,{Ra, Rb, Rc});
+
+% Creating the TT-format RHS
+rhs_vec = {a,b,c};
+F = tt_tensor(rhs_vec);
+clear K Qa Qb Qc rhs_vec
+F = F/norm(F);
+
+% X0 = tensor(zeros(M));
+X = tt_zeros([m,m,m],3);
+Params.tol = 1e-8;
+Params.imax = 6000;
+Params.X = X;
+delta=1e-9; 
+Params.tol_tr = delta;
+Params.rank_tr =51; %2*m ;
+%Params.r = 100;
+
+
+%tic;
+%[X2, Res2] = TT_Tensorized_LSQR(values, F, Params, X);
+%t_tensor_trunc = toc;
+
+
+fprintf('Standard :\n')
+
+tic;
+[Y2,Res] = TT_Tensorized_LSQR2(new_values, F, Params, X);
+%[Y2, Res2pc, iter3] = TT_Tensorized_LSQR(new_values, F, Params, X);
+t_tt_prec = toc;
+
+fprintf('Sketched : \n')
+% 
+% s = 20; n = ntot + 1;
+% rng('default')
+% E = spdiags(2*round(rand(n,1))-1,0,n,n); % Rademacher random variables
+% D = speye(n); D = D(randperm(n,s),:);    % pick s entries at random
+% Omega = @(X) D*dct(E*X)/sqrt(s/n);   % discrete cosine transform(base)
+% d = 3; l = length(new_values);
+% f = a;
+% for i = 1:d
+%    for ii = 1:l
+%       new_terms{ii}{i} = Omega(full(new_values{ii}{i}));
+%    end
+%   sf{i} = Omega(full(f));
+% end
+% 
+% SF = tt_tensor({sf{1}, sf{2}, sf{3}});
+% tic;
+% [X_sk, Res_sk] = TT_Tensorized_LSQR2(new_terms, SF, Params, X);
+% t_sketch = toc;
+% 
+% X0 = X_sk;
+% Params.tol = 1e-5;
+% Params.imax = 10; 
+% Params.tol_tr = 1e-8;
+% Params.rank_tr = 10000;
+% Params.r = 1000;
+% fprintf('Standard LS with new initial point\n')
+% tic;
+% [X2, Res2] = TT_Tensorized_LSQR2(new_values, F, Params, X0);
+% t_tt = toc;
+
+
+
+tol = 1e-8;
+imax = 6000;
+tol_tr = delta;
+r = 51;
+tic;
+[X_1,X_2,r_res,a_res,rks,DD,totres]=lsqr_matrix_multi2(coeff,C1,C2,tol,imax,tol_tr,r);
+t_matrix = toc;
+
+
+semilogy(Res.real_abs/Res.real_abs(1),'r--o','MarkerSize',4)
+hold on
+semilogy(totres/totres(1),'b--*','MarkerSize',4)
+%semilogy(r_res.nrml_res)
+legend('TT-LSQR','MATRIX-LSQR')
+xlabel('number of iterations')
+ylabel('relative residual norm')
+hold off
+
+%{
+
+[factors,core] = tt_tuck(X2,1e-9);
+
+completeX2 = core;
+for j = 1:X2.d
+    completeX2 = ttm(completeX2, j, factors{j}');
+end
+
+
+%TX2 = ttm(X2.F, {X2.U1, X2.U2, X2.U3});
+%wrk4 = ttm(TX2, values1); wrk5 = ttm(TX2, values2); wrk6 = ttm(TX2, values3);
+
+% temp1 = X2; temp2 = X2; temp3 = X2;
+% for k = 1:3
+%     temp1 = ttm(temp1, k, values1{k}');
+%     temp2 = ttm(temp2, k, values2{k}');
+%     temp3 = ttm(temp3, k, values3{k}');
+% end
+% 
+% coef1 = temp1 + temp2 + temp3;
+% 
+% for k = 1:3 
+% 
+%     wrk1 = ttm(coef1, k, values1{k});
+%     wrk2 = ttm(coef1, k, values2{k});
+%     wrk3 = ttm(coef1, k, values3{k});
+%     F1 = ttm(F, k, values1{k});
+%     F2 = ttm(F, k, values2{k});
+%     F3 = ttm(F, k, values3{k});
+% 
+% end
+
+%r_trunc_tensor = norm(F-temp1-temp2-temp3)/norm(F);
+%r_trunc_tensor = norm((F1+F2+F3)-wrk1-wrk2-wrk3)/norm(F1+F2+F3);
+
+% cores = X2.core;
+% c1 = cores(1:m1^2);
+% c2 = cores(m1^2+1:m1^2+m1^3);
+% c3 = cores(m1^2+m1^3+1:end);
+% c1 = reshape(c1,m1,m1);
+% c2 = reshape(c2,m1,m1,m1);
+% c3 = reshape(c3,m1,m1);
+% tc2 = tt_tensor(c2);
+% 
+% norm(c1), norm(tc2), norm(c3)
+
+cores = X2.core;
+ps = X2.ps;
+ranks = X2.r;
+for k = 1:d
+    C{k} = cores(ps(k):ps(k+1)-1);
+    C{k} = reshape(C{k}, [ranks(k), M(k), ranks(k+1)]);
+    fprintf('norm of core %d: %.4e\n', [k, norm(C{k},'fro')])
+end
+
+
+XX2 = reshape(full(X2), M);
+p = n_sample;
+if d == 3
+    CoreX2{1} = full(XX2(1:p,1:p,1:p));
+    for k = 2:d
+        CoreX2{k} = full(XX2(p*(k-1)+1:p*k,p*(k-1)+1:p*k,p*(k-1)+1:p*k));
+    end
+elseif d == 4
+    CoreX2{1} = XX2(1:p,1:p,1:p,1:p);
+    for k = 2:d
+        CoreX2{k} = XX2(p*(k-1)+1:p*k,p*(k-1)+1:p*k,p*(k-1)+1:p*k,p*(k-1)+1:p*k);
+    end
+end
+    
+for k = 1:length(CoreX2)
+    fprintf('Norm of diagonal block relative to digit %d: %.4e\n',[k-1, norm(CoreX2{k},'fro')])
+end
+
+% c1 = XX2(1:P(1),1:P(2),1:P(3),1:P(4));
+% c2 = XX2(P(1)+1:2*P(1),P(2)+1:2*P(2),P(3)+1:2*P(3),P(4)+1:2*P(4));
+% c3 = XX2(2*P(1)+1:3*P(1),2*P(2)+1:3*P(2),2*P(3)+1:3*P(3),2*P(4)+1:3*P(4));
+% norm(c1,'fro'),norm(c2,'fro'),norm(c3,'fro'),
+
+%pause,
+%
+% J(:,:,1) = 1;
+% J = tensor(J);
+% J(:,:,1) = 1;
+% 
+% Y0.F = J;
+% Y0.U1 = zeros(m1,p);
+% Y0.U2 = zeros(m2,p);
+% Y0.U3 = zeros(m3,p);
+% 
+% Params.tol_tr = 1e-10;
+% 
+% tic;
+% %[X3, Res3] = Tensorized_LSQR_Trunc_3terms(values1, values2, values3, Rhs, Params, Y0);
+% % [X3, Res3] = TT_Tensorized_LSQR_Trunc_3terms(values1, values2, values3, F, Params, X);
+% t_tucker = toc;
+% X3 = Y0;
+% Res3 = Res2;
+% completeX3 = ttm(X3.F, {X3.U1, X3.U2, X3.U3});
+% wrk4 = ttm(completeX3, values1); wrk5 = ttm(completeX3, values2); wrk6 = ttm(completeX3, values3);
+% r_trunc_tucker = norm(D-wrk4-wrk5-wrk6)/norm(D);
+
+%{
+addpath('./TTcore')
+addpath('./TTrandomized')
+
+% Creating a "rank 1" right-hand side
+
+p = 1;
+
+% a = ones(n1+1,1);
+% b = ones(n2+1,1);
+% c = ones(n3+1,1);
+
+F_rand = cell(d,1);
+F_rand{1} = a;
+F_rand{2} = b;
+F_rand{3} = c;
+
+
+tol = 1e-6;
+imax = 1000;
+tol_tr = 1e-6;
+r = 1000;
+
+% X0 = tt_zeros([m1,m2,m3],3);
+X0 = 0;
+% defining the parameters
+% Params.tol = 1e-7;
+% Params.imax = 100;
+% Params.X0 = X0;
+% Params.tol_tr = 1e-6;
+% Params.r = 1000;
+
+% X = tt_zeros([m1,m2,m3],3);
+X = cell(d,1);
+for i = 1:d
+    X{i} = zeros(1*M(i),1);
+end
+
+disp('rand')
+terms = values;
+tic;
+[X3, Res3] = RandTT_Tensorized_LSQR(terms, F_rand, Params, X);
+t_tensor_trunc5 = toc;
+
+l = length(values); Nd = d; 
+termsT = cell(l,1);
+
+for i = 1:l
+    termsT{i} = cell(Nd,1);
+    for j = 1:Nd
+        termsT{i}{j} = terms{i}{j}';
+    end
+end
+
+LX = OperatorL(terms, X3);
+LTLX = OperatorLT(termsT, LX);
+LTF = OperatorLT(termsT, F_rand);
+wrk{1} = LTLX; wrk{2} = LTF;
+R_ne = TTsum_Randomize_then_Orthogonalize(wrk, [1; -1]);
+r_trunc_tensor5 = TTnorm(R_ne) / TTnorm(LTF);
+
+% figure(1)
+% semilogy(Res2.real_ne_rel)
+% 
+% im1 = double(train0(79,:)');
+% rhs2 = reshape(im1,28*28,1);
+% 
+% im1 = double(train1(79,:)');
+% rhs3 = reshape(im1,28*28,1);
+% 
+% a = rhs2;
+% b = rhs2;
+% c = rhs2;
+% G = cell(d,1);
+% G{1} = a;
+% G{2} = b;
+% G{3} = c;
+% 
+% LTG = OperatorLT(termsT, G);
+% wrk{1} = LTLX; wrk{2} = LTG;
+% % R_ne = TTsum_Randomize_then_Orthogonalize(wrk, [1; -1]);
+% R_ne2 = TTsum(wrk, [1; -1]);
+% r_trunc_tensor2 = TTnorm(R_ne2) / TTnorm(LTG)
+% 
+% a = rhs3;
+% b = rhs3;
+% c = rhs3;
+% H = cell(d,1);
+% H{1} = a;
+% H{2} = b;
+% H{3} = c;
+% 
+% LTH = OperatorLT(termsT, H);
+% wrk{1} = LTLX; wrk{2} = LTH;
+% R_ne = TTsum_Randomize_then_Orthogonalize(wrk, [1; -1]);
+% r_trunc_tensor3 = TTnorm(R_ne3) / TTnorm(LTH);
+
+
+
+%}
+%}
